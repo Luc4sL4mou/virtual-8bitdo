@@ -105,7 +105,26 @@ public partial class MainWindow : Window
     private async void InstallViGEm_Click(object sender, RoutedEventArgs e) { if (_vm != null) await _vm.InstallAsync(DriverInstaller.ViGEmBus); }
     private async void InstallHidHide_Click(object sender, RoutedEventArgs e) { if (_vm != null) await _vm.InstallAsync(DriverInstaller.HidHide); }
 
-    private void NewProfile_Click(object sender, RoutedEventArgs e) => _vm?.Profiles.New();
+    /// <summary>"Novo": você escolhe o jogo na lista de programas abertos (nada é criado sem a sua escolha).</summary>
+    private void NewProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm == null) return;
+        var p = _vm.Profiles;
+        var (ok, app) = AppPickerDialog.Show(this, "Novo perfil: escolha o jogo", "Criar perfil", allowNoGame: true,
+                                             () => p.RecentExes, p.ProfileNameForExe);
+        if (ok) p.New(app);
+    }
+
+    private void ChooseGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm == null) return;
+        var p = _vm.Profiles;
+        var (ok, app) = AppPickerDialog.Show(this, $"Jogo do perfil \"{p.Editing.Name}\"", "Associar", allowNoGame: false,
+                                             () => p.RecentExes, p.ProfileNameForExe);
+        if (ok && app != null) p.SetGame(app);
+    }
+
+    private void RemoveGame_Click(object sender, RoutedEventArgs e) => _vm?.Profiles.SetGame(null);
     private void DuplicateProfile_Click(object sender, RoutedEventArgs e) => _vm?.Profiles.Duplicate();
 
     private void DeleteProfile_Click(object sender, RoutedEventArgs e)
@@ -115,8 +134,6 @@ public partial class MainWindow : Window
         if (MessageBox.Show(this, $"Apagar o perfil \"{name}\"?", "Apagar perfil", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             _vm.Profiles.Delete();
     }
-
-    private void RecentExes_DropDownOpened(object sender, EventArgs e) => _vm?.Profiles.RefreshRecent();
 
     /// <summary>Enter confirma o campo (nome do perfil, .exe) sem precisar clicar fora.</summary>
     private void CommitOnEnter(object sender, KeyEventArgs e)

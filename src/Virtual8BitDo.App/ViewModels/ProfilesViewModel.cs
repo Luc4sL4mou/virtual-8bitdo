@@ -41,10 +41,14 @@ public sealed class ProfilesViewModel : ObservableObject
 
     public Profile Active => _active;
 
+    /// <summary>
+    /// Explica por que o perfil está em uso: o jogo em foco tem perfil próprio, ou não tem e vale o Padrão.
+    /// (A janela do Virtual 8BitDo e as do Windows não contam como "programa em foco".)
+    /// </summary>
     public string ActiveText =>
-        _foreground.CurrentExe is { } exe
-            ? $"Em uso agora: {_active.Name}  ·  programa em foco: {exe}"
-            : $"Em uso agora: {_active.Name}";
+        !_active.IsDefault ? $"Em uso agora: {_active.Name}  —  {_active.Exe} está em foco"
+        : _foreground.CurrentExe is { } exe ? $"Em uso agora: Padrão  —  {exe} não tem perfil próprio"
+        : "Em uso agora: Padrão";
 
     private void UpdateActive()
     {
@@ -66,8 +70,9 @@ public sealed class ProfilesViewModel : ObservableObject
         set
         {
             if (value == null || !Set(ref _editing, value)) return;
-            foreach (var n in new[] { nameof(EditingName), nameof(EditingExe), nameof(IsEditingDefault), nameof(CanChangeExe), nameof(TurboHz) })
+            foreach (var n in new[] { nameof(EditingName), nameof(IsEditingDefault), nameof(CanChangeExe), nameof(TurboHz) })
                 OnPropertyChanged(n);
+            RefreshGameFields();
             RebuildEditor();
         }
     }
@@ -88,30 +93,44 @@ public sealed class ProfilesViewModel : ObservableObject
     }
 
     /// <summary>Jogo (.exe) associado ao perfil em edição.</summary>
-    public string? EditingExe
-    {
-        get => _editing.Exe;
-        set
-        {
-            _store.SetExe(_editing, value);
-            OnPropertyChanged();
-            UpdateActive();
-        }
-    }
+    public string? EditingExe => _editing.Exe;
 
-    /// <summary>Programas que estiveram em foco (sugestões para associar a um perfil).</summary>
+    /// <summary>Texto do campo "Jogo": o .exe, ou explica que o perfil não troca sozinho.</summary>
+    public string EditingGameText => _editing.IsDefault ? "—"
+        : _editing.Exe ?? "Nenhum (perfil manual: não é ativado sozinho)";
+
+    public bool HasEditingExe => _editing.Exe != null;
+
+    /// <summary>Programas que estiveram em foco: os mais recentes aparecem primeiro na lista de escolha.</summary>
     public IReadOnlyCollection<string> RecentExes => _foreground.RecentExes;
-    public void RefreshRecent() => OnPropertyChanged(nameof(RecentExes));
 
-    public void New()
+    /// <summary>Nome do perfil que já usa este .exe (para avisar na lista de escolha), ou null.</summary>
+    public string? ProfileNameForExe(string exe) =>
+        _store.Profiles.FirstOrDefault(p => !p.IsDefault && string.Equals(p.Exe, exe, StringComparison.OrdinalIgnoreCase))?.Name;
+
+    /// <summary>Cria um perfil para o jogo escolhido na lista (ou sem jogo, se <paramref name="app"/> for null).</summary>
+    public void New(RunningApp? app)
     {
-        // Sugere o último programa em foco (provavelmente o jogo de onde você veio).
-        string? exe = _foreground.RecentExes.FirstOrDefault(e => _store.Profiles.All(p => !string.Equals(p.Exe, e, StringComparison.OrdinalIgnoreCase)));
-        string name = exe != null ? System.IO.Path.GetFileNameWithoutExtension(exe) : "Novo perfil";
-        var p = _store.Create(name, exe);
+        var p = _store.Create(app?.DisplayName ?? "Novo perfil", null);
+        if (app != null) _store.SetExe(p, app.Exe); // se outro perfil usava esse jogo, ele perde a associação
         RefreshList();
         Editing = p;
         UpdateActive();
+    }
+
+    /// <summary>Troca (ou remove, com null) o jogo do perfil em edição.</summary>
+    public void SetGame(RunningApp? app)
+    {
+        _store.SetExe(_editing, app?.Exe);
+        RefreshGameFields();
+        UpdateActive();
+    }
+
+    private void RefreshGameFields()
+    {
+        OnPropertyChanged(nameof(EditingExe));
+        OnPropertyChanged(nameof(EditingGameText));
+        OnPropertyChanged(nameof(HasEditingExe));
     }
 
     public void Duplicate()

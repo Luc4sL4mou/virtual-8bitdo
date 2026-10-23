@@ -21,6 +21,8 @@ public partial class FloatingToast : Window
 
     private readonly ToastKind _kind;
     private readonly DispatcherTimer _hideTimer = new() { Interval = Visible };
+    // Jogos em tela cheia sem borda também ficam "sempre no topo"; reafirmar a posição mantém o aviso visível sobre eles.
+    private readonly DispatcherTimer _stayOnTop = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _closing;
 
     private FloatingToast(ToastKind kind)
@@ -32,10 +34,16 @@ public partial class FloatingToast : Window
         Frame.BorderBrush = new SolidColorBrush(kind == ToastKind.Battery ? Color.FromRgb(0xC4, 0x2B, 0x1C) : Color.FromRgb(0x2E, 0x9C, 0xFF));
 
         _hideTimer.Tick += (_, _) => FadeOutAndClose();
+        _stayOnTop.Tick += (_, _) => BringToTop();
         SourceInitialized += (_, _) => MakeToolWindow();
         SizeChanged += (_, _) => Place();
-        Loaded += (_, _) => BeginAnimation(OpacityProperty, new DoubleAnimation(1, Fade));
-        Closed += (_, _) => Open.Remove(_kind);
+        Loaded += (_, _) =>
+        {
+            BeginAnimation(OpacityProperty, new DoubleAnimation(1, Fade));
+            BringToTop();
+            _stayOnTop.Start();
+        };
+        Closed += (_, _) => { _stayOnTop.Stop(); Open.Remove(_kind); };
     }
 
     /// <summary>Mostra (ou atualiza) o pop-up. Funciona mesmo com a janela principal escondida na bandeja.</summary>
@@ -51,6 +59,7 @@ public partial class FloatingToast : Window
         {
             toast.SetText(title, subtitle);
             toast.Revive();
+            toast.BringToTop();
         }
         toast._hideTimer.Stop();
         toast._hideTimer.Start();
@@ -100,6 +109,18 @@ public partial class FloatingToast : Window
 
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hwnd, int index);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hwnd, int index, int value);
+    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    private static readonly IntPtr HWND_TOPMOST = new(-1);
+    private const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_SHOWWINDOW = 0x0040;
+
+    /// <summary>Põe o aviso por cima de tudo de novo, sem tirar o foco do jogo.</summary>
+    private void BringToTop()
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    }
 
     private void MakeToolWindow()
     {

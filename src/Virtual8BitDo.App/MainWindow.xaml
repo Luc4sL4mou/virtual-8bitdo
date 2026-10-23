@@ -155,7 +155,7 @@
                                               DisplayMemberPath="Name" Margin="0,0,0,8"/>
                                     <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,8">
                                         <Button Content="Novo" Click="NewProfile_Click" Margin="0,0,6,0"
-                                                ToolTip="Cria um perfil para o último jogo que esteve em foco."/>
+                                                ToolTip="Cria um perfil: você escolhe o jogo na lista de programas abertos."/>
                                         <Button Content="Duplicar" Click="DuplicateProfile_Click" Margin="0,0,6,0"/>
                                         <Button Content="Apagar" Click="DeleteProfile_Click" IsEnabled="{Binding CanChangeExe}"/>
                                     </StackPanel>
@@ -164,11 +164,18 @@
                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditingName, UpdateSourceTrigger=LostFocus}" Margin="0,0,0,8"
                                              KeyDown="CommitOnEnter"/>
 
-                                    <TextBlock Grid.Row="2" Text="Jogo (.exe)" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
-                                    <ComboBox Grid.Row="2" Grid.Column="1" IsEditable="True" ItemsSource="{Binding RecentExes}"
-                                              Text="{Binding EditingExe, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanChangeExe}"
-                                              DropDownOpened="RecentExes_DropDownOpened" KeyDown="CommitOnEnter"
-                                              ToolTip="O perfil é ativado sozinho quando este programa estiver em foco. A lista mostra os programas que estiveram em foco."/>
+                                    <TextBlock Grid.Row="2" Text="Jogo" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
+                                    <Border Grid.Row="2" Grid.Column="1" Background="{StaticResource ChipBrush}" CornerRadius="4" Padding="10,6"
+                                            ToolTip="O perfil é ativado sozinho quando este jogo estiver em foco.">
+                                        <TextBlock Text="{Binding EditingGameText}" TextTrimming="CharacterEllipsis"/>
+                                    </Border>
+                                    <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0"
+                                                Visibility="{Binding CanChangeExe, Converter={StaticResource BoolToVis}}">
+                                        <Button Content="Escolher jogo..." Click="ChooseGame_Click" Margin="0,0,6,0"/>
+                                        <Button Content="Remover" Click="RemoveGame_Click"
+                                                Visibility="{Binding HasEditingExe, Converter={StaticResource BoolToVis}}"
+                                                ToolTip="Tira o jogo deste perfil: ele deixa de ser ativado sozinho."/>
+                                    </StackPanel>
                                 </Grid>
                                 <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6,0,0"
                                            Visibility="{Binding IsEditingDefault, Converter={StaticResource BoolToVis}}"
