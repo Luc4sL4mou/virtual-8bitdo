@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -7,7 +7,7 @@ using System.Windows.Threading;
 
 namespace Virtual8BitDo.App.Views;
 
-public enum ToastKind { Battery, Turbo }
+public enum ToastKind { Battery, Turbo, Profile }
 
 /// <summary>
 /// Pop-up flutuante de ~2 segundos. Se já houver um aberto do mesmo tipo, ele é atualizado e o tempo recomeça
@@ -29,9 +29,14 @@ public partial class FloatingToast : Window
     {
         InitializeComponent();
         _kind = kind;
-        BatteryIcon.Visibility = kind == ToastKind.Battery ? Visibility.Visible : Visibility.Collapsed;
-        TurboIcon.Visibility = kind == ToastKind.Turbo ? Visibility.Visible : Visibility.Collapsed;
-        Frame.BorderBrush = new SolidColorBrush(kind == ToastKind.Battery ? Color.FromRgb(0xC4, 0x2B, 0x1C) : Color.FromRgb(0x2E, 0x9C, 0xFF));
+        // Ícones da fonte Segoe Fluent Icons: bateria fraca, raio (turbo), controle de jogo (perfil).
+        Glyph.Text = kind switch { ToastKind.Battery => "", ToastKind.Turbo => "", _ => "" };
+        if (kind == ToastKind.Battery)
+        {
+            var red = new LinearGradientBrush(Color.FromRgb(0xEF, 0x44, 0x44), Color.FromRgb(0xF9, 0x73, 0x16), 45);
+            Ring.Background = red;
+            Badge.Background = red;
+        }
 
         _hideTimer.Tick += (_, _) => FadeOutAndClose();
         _stayOnTop.Tick += (_, _) => BringToTop();

@@ -22,6 +22,8 @@ public sealed class ProfilesViewModel : ObservableObject
     private Profile _active;
     private string? _selectedButton;
     private ButtonEditorViewModel? _editor;
+    private string? _gameName;
+    private System.Windows.Media.ImageSource? _gameIcon;
 
     public ProfilesViewModel(ProfileStore store, ControllerEngine engine, ForegroundWatcher foreground, Func<ControllerViewModel?> selectedController)
     {
@@ -32,23 +34,57 @@ public sealed class ProfilesViewModel : ObservableObject
         Profiles = new ObservableCollection<Profile>(store.Profiles);
         _editing = _active = store.Default;
         _engine.SetProfile(_active);
-        _foreground.ForegroundChanged += _ => UpdateActive();
+        _foreground.ForegroundChanged += _ => OnForegroundChanged();
     }
+
+    /// <summary>O jogo em foco trocou o perfil sozinho (para o aviso flutuante): perfil novo e nome do jogo (null = nenhum).</summary>
+    public event Action<Profile, string?>? ActiveSwitchedByGame;
 
     public ObservableCollection<Profile> Profiles { get; }
 
     // ---- Perfil em uso (pelo jogo em foco) ----
 
     public Profile Active => _active;
+    public string ActiveName => _active.Name;
 
     /// <summary>
     /// Explica por que o perfil está em uso: o jogo em foco tem perfil próprio, ou não tem e vale o Padrão.
     /// (A janela do Virtual 8BitDo e as do Windows não contam como "programa em foco".)
     /// </summary>
     public string ActiveText =>
-        !_active.IsDefault ? $"Em uso agora: {_active.Name}  —  {_active.Exe} está em foco"
-        : _foreground.CurrentExe is { } exe ? $"Em uso agora: Padrão  —  {exe} não tem perfil próprio"
-        : "Em uso agora: Padrão";
+        !_active.IsDefault ? $"Perfil \"{_active.Name}\" ativado automaticamente"
+        : _foreground.CurrentExe != null ? "Sem perfil próprio: usando o Padrão"
+        : "Abra um jogo: o perfil dele entra sozinho";
+
+    // ---- Jogo em foco (cartão do topo) ----
+
+    public bool HasGame => _foreground.CurrentExe != null;
+    public string GameName => _gameName ?? "Nenhum jogo em foco";
+    public string? GameExe => _foreground.CurrentExe;
+    public System.Windows.Media.ImageSource? GameIcon => _gameIcon;
+    public bool GameHasProfile => !_active.IsDefault;
+
+    /// <summary>Jogo em foco sem perfil próprio: o cartão oferece criar um com um clique.</summary>
+    public bool CanCreateForGame => HasGame && _active.IsDefault;
+
+    private void OnForegroundChanged()
+    {
+        if (_foreground.CurrentPath is { } path) (_gameName, _gameIcon) = RunningApps.Describe(path, _foreground.CurrentTitle);
+        else (_gameName, _gameIcon) = (null, null);
+        foreach (var n in new[] { nameof(HasGame), nameof(GameName), nameof(GameExe), nameof(GameIcon) })
+            OnPropertyChanged(n);
+
+        var before = _active;
+        UpdateActive();
+        if (_active != before) ActiveSwitchedByGame?.Invoke(_active, _gameName);
+    }
+
+    /// <summary>Cria (e já ativa) um perfil para o jogo em foco agora.</summary>
+    public void NewForCurrentGame()
+    {
+        if (_foreground.CurrentPath is not { } path) return;
+        New(RunningApps.FromPath(path) with { DisplayName = GameName });
+    }
 
     private void UpdateActive()
     {
@@ -60,6 +96,9 @@ public sealed class ProfilesViewModel : ObservableObject
             OnPropertyChanged(nameof(Active));
         }
         OnPropertyChanged(nameof(ActiveText));
+        OnPropertyChanged(nameof(ActiveName));
+        OnPropertyChanged(nameof(GameHasProfile));
+        OnPropertyChanged(nameof(CanCreateForGame));
     }
 
     // ---- Perfil em edição ----
@@ -89,6 +128,7 @@ public sealed class ProfilesViewModel : ObservableObject
             OnPropertyChanged();
             RefreshList();
             OnPropertyChanged(nameof(ActiveText));
+            OnPropertyChanged(nameof(ActiveName));
         }
     }
 

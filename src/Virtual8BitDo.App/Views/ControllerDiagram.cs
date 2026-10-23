@@ -12,10 +12,9 @@ namespace Virtual8BitDo.App.Views;
 /// </summary>
 public sealed class ControllerDiagram : UserControl
 {
-    private static readonly Color NormalColor = Color.FromRgb(0x1B, 0x1D, 0x21);
-    private static readonly Color PressedColor = Color.FromRgb(0x2E, 0x9C, 0xFF);
-    private static readonly Brush DisabledBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0x30, 0x35)));
-    private static readonly Brush DisabledText = Freeze(new SolidColorBrush(Color.FromRgb(0x6B, 0x6F, 0x77)));
+    // Cores do tema (Themes/Colors.*.xaml), recarregadas quando o tema muda.
+    private Color _normal, _pressed, _ring, _buttonText, _ringText, _onAccent;
+    private Brush _disabledFill = Brushes.Gray, _disabledText = Brushes.Gray, _selectedStroke = Brushes.Pink, _customStroke = Brushes.Orange;
     private static readonly DoubleCollection Dashes = new() { 2, 2 };
 
     private enum Kind { Rect, Ellipse }
@@ -62,12 +61,12 @@ public sealed class ControllerDiagram : UserControl
     private const double ThumbSize = 40;   // "cabeça" do analógico (o anel externo tem 76)
     private const double StickTravel = 16; // quanto a cabeça anda quando o stick vai até o limite
 
-    private static readonly Brush SelectedStroke = Freeze(new SolidColorBrush(Color.FromRgb(0x60, 0xCD, 0xFF)));
-    private static readonly Brush CustomStroke = Freeze(new SolidColorBrush(Color.FromRgb(0xFF, 0xB0, 0x20)));
-
     private readonly Dictionary<string, (Shape Shape, TextBlock Label)> _parts = new();
     private readonly Ellipse _leftThumb = new();
     private readonly Ellipse _rightThumb = new();
+    private readonly Path _body = BuildBody();
+    private readonly List<Shape> _decorFills = new();
+    private readonly List<UIElement> _decorMarks = new();
     private ControllerViewModel? _vm;
     private string? _selectedId;
 
@@ -91,7 +90,7 @@ public sealed class ControllerDiagram : UserControl
     {
         var canvas = new Canvas { Width = 600, Height = 380 };
 
-        canvas.Children.Add(BuildBody());
+        canvas.Children.Add(_body);
         AddControllerOnlyButtons(canvas);
 
         foreach (var s in Specs)
@@ -136,6 +135,39 @@ public sealed class ControllerDiagram : UserControl
         foreach (var id in new[] { "L3", "R3" }) canvas.Children.Add(_parts[id].Label);
 
         Content = new Viewbox { Child = canvas, StretchDirection = StretchDirection.DownOnly, MaxWidth = 600 };
+        LoadThemeColors();
+        Services.ThemeManager.Changed += LoadThemeColors;
+    }
+
+    private static Color ThemeColor(string key) =>
+        Application.Current?.TryFindResource(key) is Color c ? c : Colors.Gray;
+
+    /// <summary>Lê as cores do tema atual e repinta tudo (corpo, botões, enfeites).</summary>
+    private void LoadThemeColors()
+    {
+        _normal = ThemeColor("DiagramButtonColor");
+        _pressed = ThemeColor("DiagramPressedColor");
+        _ring = ThemeColor("DiagramRingColor");
+        _buttonText = ThemeColor("DiagramButtonTextColor");
+        _ringText = ThemeColor("DiagramRingTextColor");
+        _onAccent = (Application.Current?.TryFindResource("OnAccentBrush") as SolidColorBrush)?.Color ?? Colors.Black;
+        _disabledFill = Freeze(new SolidColorBrush(ThemeColor("DiagramDisabledColor")));
+        _disabledText = Freeze(new SolidColorBrush(ThemeColor("DiagramDisabledTextColor")));
+        _selectedStroke = Freeze(new SolidColorBrush(ThemeColor("DiagramSelectedColor")));
+        _customStroke = Freeze(new SolidColorBrush(ThemeColor("DiagramCustomColor")));
+
+        _body.Fill = Freeze(new LinearGradientBrush(ThemeColor("DiagramBodyTopColor"), ThemeColor("DiagramBodyBottomColor"), 90));
+        _body.Stroke = Freeze(new SolidColorBrush(ThemeColor("DiagramStrokeColor")));
+
+        var decor = Freeze(new SolidColorBrush(ThemeColor("DiagramDecorColor")));
+        var mark = Freeze(new SolidColorBrush(ThemeColor("DiagramDecorMarkColor")));
+        foreach (var f in _decorFills) f.Fill = decor;
+        foreach (var m in _decorMarks)
+        {
+            if (m is Shape { Fill: not null } filled) filled.Fill = mark;
+            else if (m is Shape outline) outline.Stroke = mark;
+            else if (m is TextBlock t) t.Foreground = mark;
+        }
         Render();
     }
 
@@ -176,14 +208,12 @@ public sealed class ControllerDiagram : UserControl
         }
         geometry.Freeze();
 
-        var fill = new LinearGradientBrush(Color.FromRgb(0x46, 0x4A, 0x54), Color.FromRgb(0x33, 0x36, 0x3E), 90);
-        fill.Freeze();
+        // As cores vêm do tema (LoadThemeColors); a sombra suave dá profundidade sobre o cartão.
         return new Path
         {
             Data = geometry,
-            Fill = fill,
-            Stroke = Freeze(new SolidColorBrush(Color.FromRgb(0x58, 0x5D, 0x68))),
             StrokeThickness = 1.5,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 28, ShadowDepth = 6, Direction = 270, Opacity = 0.35 },
             StrokeLineJoin = PenLineJoin.Round,
             IsHitTestVisible = false,
         };
@@ -193,31 +223,30 @@ public sealed class ControllerDiagram : UserControl
     /// Botões que só o próprio controle usa (não chegam ao PC): Screenshot, Estrela (turbo do controle)
     /// e o botão de perfil com as 3 luzes. Aparecem na arte, mas não são selecionáveis.
     /// </summary>
-    private static void AddControllerOnlyButtons(Canvas canvas)
+    private void AddControllerOnlyButtons(Canvas canvas)
     {
-        var fill = Freeze(new SolidColorBrush(Color.FromRgb(0x2A, 0x2C, 0x31)));
-        var mark = Freeze(new SolidColorBrush(Color.FromRgb(0x8A, 0x8E, 0x96)));
         const string tip = "Botão do próprio controle: não é enviado ao PC.";
 
         void Add(UIElement e, double x, double y)
         {
             if (e is FrameworkElement fe) fe.ToolTip = tip;
+            if (e.IsHitTestVisible && e is Shape shape) _decorFills.Add(shape); else _decorMarks.Add(e);
             Canvas.SetLeft(e, x); Canvas.SetTop(e, y);
             canvas.Children.Add(e);
         }
 
         // Screenshot: quadrado arredondado com um círculo dentro.
-        Add(new Rectangle { Width = 22, Height = 22, RadiusX = 5, RadiusY = 5, Fill = fill }, 266, 157);
-        Add(new Ellipse { Width = 9, Height = 9, Stroke = mark, StrokeThickness = 1.5, IsHitTestVisible = false }, 272.5, 163.5);
+        Add(new Rectangle { Width = 22, Height = 22, RadiusX = 5, RadiusY = 5 }, 266, 157);
+        Add(new Ellipse { Width = 9, Height = 9, StrokeThickness = 1.5, IsHitTestVisible = false }, 272.5, 163.5);
 
         // Estrela: botão de turbo do controle.
-        Add(new Ellipse { Width = 22, Height = 22, Fill = fill }, 312, 157);
-        Add(new TextBlock { Text = "★", FontSize = 12, Foreground = mark, Width = 22, TextAlignment = TextAlignment.Center, IsHitTestVisible = false }, 312, 160);
+        Add(new Ellipse { Width = 22, Height = 22 }, 312, 157);
+        Add(new TextBlock { Text = "★", FontSize = 12, Width = 22, TextAlignment = TextAlignment.Center, IsHitTestVisible = false }, 312, 160);
 
         // Perfil do controle: botão em pílula com 3 luzes na vertical embaixo.
-        Add(new Rectangle { Width = 30, Height = 10, RadiusX = 5, RadiusY = 5, Fill = fill }, 285, 196);
+        Add(new Rectangle { Width = 30, Height = 10, RadiusX = 5, RadiusY = 5 }, 285, 196);
         for (int i = 0; i < 3; i++)
-            Add(new Ellipse { Width = 4, Height = 4, Fill = mark, IsHitTestVisible = false }, 298, 212 + i * 9);
+            Add(new Ellipse { Width = 4, Height = 4, Fill = Brushes.Gray, IsHitTestVisible = false }, 298, 212 + i * 9);
     }
 
     public void Bind(ControllerViewModel? vm)
@@ -245,25 +274,26 @@ public sealed class ControllerDiagram : UserControl
 
             if (!available)
             {
-                shape.Fill = DisabledBrush;
-                shape.Stroke = DisabledText;
+                shape.Fill = _disabledFill;
+                shape.Stroke = _disabledText;
                 shape.StrokeThickness = 1;
                 shape.StrokeDashArray = Dashes;
-                label.Foreground = DisabledText;
+                label.Foreground = _disabledText;
             }
             else
             {
-                shape.Fill = new SolidColorBrush(Blend(NormalColor, PressedColor, analog));
+                shape.Fill = new SolidColorBrush(Blend(_normal, _pressed, analog));
                 shape.Stroke = null;
                 shape.StrokeDashArray = null;
-                label.Foreground = Brushes.White;
+                // L3/R3: o rótulo fica sobre o anel do analógico, não sobre um botão.
+                label.Foreground = new SolidColorBrush(s.Id is "L3" or "R3" ? _ringText : analog > 0.5f ? _onAccent : _buttonText);
             }
 
             // Mapeamento do perfil em edição: âmbar = alterado / turbo; azul = selecionado no editor.
             var (customized, turbo) = Decorate?.Invoke(s.Id) ?? (false, false);
-            if (turbo) label.Foreground = CustomStroke;
-            if (customized) { shape.Stroke = CustomStroke; shape.StrokeThickness = 2; shape.StrokeDashArray = null; }
-            if (s.Id == _selectedId) { shape.Stroke = SelectedStroke; shape.StrokeThickness = 3; shape.StrokeDashArray = null; }
+            if (turbo) label.Foreground = _customStroke;
+            if (customized) { shape.Stroke = _customStroke; shape.StrokeThickness = 2; shape.StrokeDashArray = null; }
+            if (s.Id == _selectedId) { shape.Stroke = _selectedStroke; shape.StrokeThickness = 3; shape.StrokeDashArray = null; }
         }
 
         RenderStick(_leftThumb, "L3", _vm?.LeftX ?? 0, _vm?.LeftY ?? 0);
@@ -277,8 +307,8 @@ public sealed class ControllerDiagram : UserControl
         var (shape, _) = _parts[id];
 
         // O anel externo fica cinza claro; a cabeça é a parte que se move/pinta.
-        if (available) shape.Fill = new SolidColorBrush(Color.FromRgb(0x50, 0x54, 0x5D));
-        thumb.Fill = !available ? DisabledText : new SolidColorBrush(pressed ? PressedColor : NormalColor);
+        if (available) shape.Fill = new SolidColorBrush(_ring);
+        thumb.Fill = !available ? _disabledText : new SolidColorBrush(pressed ? _pressed : _normal);
         var t = (TranslateTransform)thumb.RenderTransform;
         t.X = x * StickTravel;
         t.Y = y * StickTravel;

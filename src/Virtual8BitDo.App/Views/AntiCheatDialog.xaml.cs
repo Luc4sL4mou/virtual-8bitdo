@@ -1,11 +1,15 @@
-using System.Windows;
+﻿using System.Windows;
 using Virtual8BitDo.App.Services;
 
 namespace Virtual8BitDo.App.Views;
 
 public partial class AntiCheatDialog : Window
 {
-    private AntiCheatDialog() => InitializeComponent();
+    private AntiCheatDialog()
+    {
+        InitializeComponent();
+        SourceInitialized += (_, _) => WindowEffects.Apply(this);
+    }
 
     /// <summary>Mostra o aviso, a menos que o usuário tenha marcado "não mostrar novamente" antes.</summary>
     public static void ShowIfNeeded(Window owner, AppSettings settings)

@@ -3,13 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ThemeMode="Dark"
              ShutdownMode="OnExplicitShutdown">
-    <!-- ThemeMode="Dark": tema Fluent (visual Windows 11) sempre escuro, independente do Windows.
+    <!-- ThemeMode: tema Fluent (visual Windows 11). Escuro por padrão; o ThemeManager troca para claro se o usuário escolher.
          Sem StartupUri: a janela é criada em App.xaml.cs, depois de checar se já há outra cópia aberta.
          OnExplicitShutdown: fechar/esconder a janela não encerra o app (ele fica na bandeja). -->
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/Palette.xaml"/>
+                <ResourceDictionary Source="Themes/Styles.xaml"/>
+                <ResourceDictionary Source="Themes/Colors.Dark.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

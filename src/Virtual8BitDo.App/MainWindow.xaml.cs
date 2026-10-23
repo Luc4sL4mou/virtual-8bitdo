@@ -61,12 +61,20 @@ public partial class MainWindow : Window
                 () => AntiCheatDialog.ShowIfNeeded(this, _settings));
         };
         SourceInitialized += (_, _) => WindowEffects.Apply(this);
+
+        (ThemeManager.IsDark ? DarkThemeOption : LightThemeOption).IsChecked = true;
+        HeroClip.SizeChanged += (_, e) => HeroClip.Clip = new System.Windows.Media.RectangleGeometry(new Rect(e.NewSize), 20, 20);
         Closed += (_, _) => _vm.Dispose();
 
         // Pop-ups flutuantes (aparecem mesmo com a janela escondida na bandeja).
         _vm.LowBattery += (controller, percent) =>
             FloatingToast.Show(ToastKind.Battery, controller.LowBatteryTitle(percent), controller.DisplayName);
         _vm.TurboAdjusted += ShowTurboToast;
+        // O jogo em foco trocou o perfil sozinho: confirma com um aviso (só quando entra/sai o perfil de um jogo).
+        _vm.Profiles.ActiveSwitchedByGame += (profile, game) =>
+            FloatingToast.Show(ToastKind.Profile, $"Perfil: {profile.Name}",
+                profile.IsDefault ? (game != null ? $"{game}: sem perfil próprio" : "Nenhum jogo com perfil em foco")
+                : $"{game ?? profile.Exe} em foco");
         _vm.ControllerTurboDetected += d =>
             FloatingToast.Show(ToastKind.Turbo, $"Turbo do controle: {d.Hz:0} Hz",
                 $"{ButtonLabels.For(d.Button, _vm.Selected)} · medido ao vivo");
@@ -122,6 +130,18 @@ public partial class MainWindow : Window
         var (ok, app) = AppPickerDialog.Show(this, $"Jogo do perfil \"{p.Editing.Name}\"", "Associar", allowNoGame: false,
                                              () => p.RecentExes, p.ProfileNameForExe);
         if (ok && app != null) p.SetGame(app);
+    }
+
+    private void NewProfileForGame_Click(object sender, RoutedEventArgs e) => _vm?.Profiles.NewForCurrentGame();
+
+    /// <summary>Seletor de tema (escuro/claro): aplica na hora e lembra a escolha.</summary>
+    private void Theme_Checked(object sender, RoutedEventArgs e)
+    {
+        bool dark = sender == DarkThemeOption;
+        if (dark == ThemeManager.IsDark) return;
+        ThemeManager.Apply(dark);
+        _settings.LightTheme = !dark;
+        _settings.Save();
     }
 
     private void RemoveGame_Click(object sender, RoutedEventArgs e) => _vm?.Profiles.SetGame(null);

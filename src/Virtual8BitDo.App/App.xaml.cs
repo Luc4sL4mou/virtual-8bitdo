@@ -24,6 +24,7 @@ public partial class App : Application
             return;
         }
 
+        ThemeManager.Apply(dark: !AppSettings.Load().LightTheme);
         _window = new MainWindow();
         _tray = new TrayIcon(onOpen: ShowMainWindow, onExit: ExitApp);
         _single.ListenForShowRequests(() => Dispatcher.Invoke(ShowMainWindow));
@@ -35,6 +36,9 @@ public partial class App : Application
         // "--testar-turbo" mostra o pop-up do turbo como ele aparece ao ajustar no controle.
         if (e.Args.Contains("--testar-turbo"))
             Views.FloatingToast.Show(Views.ToastKind.Turbo, "Turbo: 12 Hz", "medido agora: 12.0 Hz");
+        // "--testar-perfil" mostra o aviso de troca automática de perfil.
+        if (e.Args.Contains("--testar-perfil"))
+            Views.FloatingToast.Show(Views.ToastKind.Profile, "Perfil: PES 2021", "eFootball PES 2021 em foco");
     }
 
     public void ShowMainWindow()

@@ -135,9 +135,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public bool HasSelection => Selected != null;
     public bool HasNoSelection => Selected == null;
     public bool HasNoControllers => Controllers.Count == 0;
+    public int ControllerCount => Controllers.Count;
 
     public string StatusText => _catalog.LoadError
-        ?? $"Catálogo: {_catalog.Models.Count} modelo(s) conhecido(s).";
+        ?? $"{_catalog.Models.Count} modelos no catálogo";
 
     // ---- Controle virtual + HidHide ----
 
@@ -175,6 +176,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     };
 
     public bool IsVirtualActive => Forwarding && _engine.VirtualPadCount > 0;
+    public bool IsHiding => _hidHide.Status == HidHideStatus.Hiding;
 
     /// <summary>Emergência: desliga o repasse e mostra o controle físico de novo para os jogos.</summary>
     public void RestorePhysical() => Forwarding = false;
@@ -184,6 +186,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(VirtualStatusText));
         OnPropertyChanged(nameof(HidHideStatusText));
         OnPropertyChanged(nameof(IsVirtualActive));
+        OnPropertyChanged(nameof(IsHiding));
         OnPropertyChanged(nameof(IsViGEmMissing));
         OnPropertyChanged(nameof(IsHidHideMissing));
     }
@@ -221,6 +224,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Controllers.Add(vm);
         Selected ??= vm;
         OnPropertyChanged(nameof(HasNoControllers));
+        OnPropertyChanged(nameof(ControllerCount));
         if (ShouldForward(info)) _ = UpdateHidingAsync();
     }
 
@@ -232,6 +236,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _batteryAlerts.Remove(instanceId); // desligou (ou foi para a base): o alerta para
         if (Selected == vm) Selected = Controllers.FirstOrDefault();
         OnPropertyChanged(nameof(HasNoControllers));
+        OnPropertyChanged(nameof(ControllerCount));
         if (ShouldForward(vm.Info)) _ = UpdateHidingAsync();
     }
 
@@ -266,6 +271,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _timer.Stop();
+        Foreground.Dispose();
         _engine.Dispose();
         // Ao fechar o app, o controle físico volta a ficar visível para os jogos.
         if (_hidHide.Status == HidHideStatus.Hiding) _hidHide.Unhide();

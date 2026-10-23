@@ -15,6 +15,9 @@ public sealed class AppSettings
     /// <summary>Repassar para o controle virtual (lembrado entre execuções).</summary>
     public bool Forwarding { get; set; } = true;
 
+    /// <summary>Tema claro (o padrão é o escuro).</summary>
+    public bool LightTheme { get; set; }
+
     public static AppSettings Load()
     {
         try

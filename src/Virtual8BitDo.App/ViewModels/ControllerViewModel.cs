@@ -79,6 +79,15 @@ public sealed class ControllerViewModel : ObservableObject
 
     public bool IsWireless => Connection is ConnectionType.Dongle24G or ConnectionType.Bluetooth;
 
+    /// <summary>Ícone (fonte Segoe Fluent Icons) do tipo de conexão: Bluetooth, sem fio 2.4G, cabo USB ou controle genérico.</summary>
+    public string ConnectionGlyph => Connection switch
+    {
+        ConnectionType.Bluetooth => "",
+        ConnectionType.Dongle24G => "",
+        ConnectionType.Usb => "",
+        _ => "",
+    };
+
     // ---- Bateria (só exibida quando sem fio) ----
     private BatteryStatus _battery = BatteryStatus.Unknown;
     public BatteryStatus Battery => _battery;
@@ -146,6 +155,7 @@ public sealed class ControllerViewModel : ObservableObject
             OnPropertyChanged(nameof(ModelText));
             OnPropertyChanged(nameof(Connection));
             OnPropertyChanged(nameof(ConnectionMode));
+            OnPropertyChanged(nameof(ConnectionGlyph));
             OnPropertyChanged(nameof(IsWireless));
             OnPropertyChanged(nameof(ShowBattery));
             OnPropertyChanged(nameof(ModelNote));

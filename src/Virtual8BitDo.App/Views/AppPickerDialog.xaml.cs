@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
@@ -28,6 +28,7 @@ public partial class AppPickerDialog : Window
                             Func<IEnumerable<string>> recentExes, Func<string, string?> profileForExe)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => WindowEffects.Apply(this);
         Heading.Text = heading;
         Title = heading;
         ConfirmButton.Content = confirmText;
