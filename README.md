@@ -53,6 +53,10 @@ O escuro é o padrão. A troca é na hora, pelo botão lua/sol no canto da barra
 
 </details>
 
+## Baixar
+
+Baixe o `.zip` da versão mais recente em **[Releases](https://github.com/Luc4sL4mou/virtual-8bitdo/releases/latest)**, extraia numa pasta e abra o `Virtual8BitDo.App.exe`. É um executável único e já inclui o .NET: não precisa instalar mais nada além dos drivers abaixo. Mantenha o `models.json` na mesma pasta do `.exe`.
+
 ## Requisitos
 
 - **Windows 10 ou 11** (64 bits). Alguns detalhes visuais, como a cor da barra de título, só aparecem no Windows 11.
@@ -144,3 +148,7 @@ Este projeto só existe por causa do trabalho de outras pessoas. Obrigado a:
 | [8bitdo-ultimate2-linux](https://github.com/MiguelSanzBr/8bitdo-ultimate2-linux) | MiguelSanzBr | MIT — fonte da consulta de bateria no modo Xbox, obtida por engenharia reversa |
 
 Virtual 8BitDo não é afiliado nem endossado pela 8BitDo, pela Microsoft ou pelos autores acima. "8BitDo" e "Xbox" são marcas de seus respectivos donos.
+
+## Licença
+
+O código do Virtual 8BitDo é distribuído sob a [licença MIT](LICENSE). Os componentes de terceiros listados acima mantêm as licenças deles.
