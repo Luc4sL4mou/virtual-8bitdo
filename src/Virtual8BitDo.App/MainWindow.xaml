@@ -1,0 +1,451 @@
+﻿<Window x:Class="Virtual8BitDo.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Virtual8BitDo.App.Views"
+        Title="Virtual 8BitDo" Width="1180" Height="860" MinWidth="980" MinHeight="660"
+        Icon="pack://application:,,,/Assets/app.ico"
+        Background="{StaticResource WindowBgBrush}"
+        TextElement.Foreground="{StaticResource TextPrimaryBrush}"
+        FontFamily="Segoe UI Variable Text, Segoe UI">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- "Chip" de botão cru: cinza normal, azul quando pressionado. -->
+        <Style x:Key="RawChip" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource ChipBrush}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                    <Setter Property="Background" Value="#2E9CFF"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Ícone de bateria: contorno + preenchimento proporcional ao nível (cor muda com o nível). -->
+        <DataTemplate x:Key="BatteryIcon">
+            <Grid Width="30" Height="14" VerticalAlignment="Center">
+                <Border BorderBrush="{StaticResource TextSecondaryBrush}" BorderThickness="1.5" CornerRadius="3" Margin="0,0,3,0">
+                    <Grid>
+                        <Border Background="{Binding BatteryBrush}" Margin="1.5" CornerRadius="1.5" RenderTransformOrigin="0,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="{Binding BatteryFraction}"/>
+                            </Border.RenderTransform>
+                        </Border>
+                        <!-- Raio vetorial, centralizado no corpo da bateria (emoji ⚡ desalinhava). -->
+                        <Path Data="M4.5,0 L0,5.5 L2.8,5.5 L1.8,10 L6.5,3.8 L3.7,3.8 Z" Width="5" Height="7.5" Stretch="Fill"
+                              Fill="White" Stroke="#1B1D21" StrokeThickness="0.6" StrokeLineJoin="Round"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Visibility="{Binding IsCharging, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+                </Border>
+                <Border Background="{StaticResource TextSecondaryBrush}" Width="2" Height="6" CornerRadius="0,1,1,0" HorizontalAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="InfoLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}"/>
+            <Setter Property="Margin" Value="0,0,16,6"/>
+        </Style>
+        <Style x:Key="InfoValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="TipTitle" TargetType="TextBlock" BasedOn="{StaticResource CardTitle}"/>
+        <Style x:Key="TipText" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="LineHeight" Value="20"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="290"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ========== Coluna esquerda: marca + controles conectados + controle virtual ========== -->
+        <DockPanel Grid.Column="0" Margin="16,16,8,12">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,0,16">
+                <Image Source="pack://application:,,,/Assets/app.ico" Width="32" Height="32"/>
+                <TextBlock Text="Virtual 8BitDo" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+
+            <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="4,10,0,0"
+                       Text="{Binding StatusText}"/>
+
+            <!-- Controle virtual Xbox 360 (ViGEmBus) + HidHide -->
+            <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Padding="14" Margin="0,8,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="Controle virtual Xbox 360" Margin="0,0,0,6"/>
+                    <CheckBox Content="Repassar para o controle virtual" IsChecked="{Binding Forwarding}" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding VirtualStatusText}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="{Binding HidHideStatusText}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+
+                    <!-- Instalação dos drivers pela fonte oficial (aparece só quando falta algum) -->
+                    <Button Content="Instalar ViGEmBus (oficial)" Click="InstallViGEm_Click" Margin="0,10,0,0" HorizontalAlignment="Left"
+                            IsEnabled="{Binding CanInstall}" Visibility="{Binding IsViGEmMissing, Converter={StaticResource BoolToVis}}"
+                            ToolTip="Baixa o instalador oficial do GitHub da Nefarius e confere a assinatura digital antes de abrir."/>
+                    <Button Content="Instalar HidHide (oficial)" Click="InstallHidHide_Click" Margin="0,10,0,0" HorizontalAlignment="Left"
+                            IsEnabled="{Binding CanInstall}" Visibility="{Binding IsHidHideMissing, Converter={StaticResource BoolToVis}}"
+                            ToolTip="Baixa o instalador oficial do GitHub da Nefarius e confere a assinatura digital antes de abrir."/>
+                    <TextBlock Text="{Binding InstallStatus}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"
+                               Visibility="{Binding HasInstallStatus, Converter={StaticResource BoolToVis}}"/>
+
+                    <Button Content="Restaurar controle físico" Click="RestorePhysical_Click" Margin="0,10,0,0" HorizontalAlignment="Left"
+                            ToolTip="Desliga o repasse e mostra o controle físico de novo para os jogos."/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock DockPanel.Dock="Top" Text="Controles conectados" Style="{StaticResource Caption}" Margin="4,0,0,8"/>
+            <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" Margin="4,0,0,8"
+                       Visibility="{Binding HasNoControllers, Converter={StaticResource BoolToVis}}"
+                       Text="Nenhum controle detectado. Conecte o controle (cabo, Bluetooth ou dongle) e aguarde alguns segundos."/>
+
+            <ListBox ItemsSource="{Binding Controllers}" SelectedItem="{Binding Selected}"
+                     HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     Background="Transparent" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="4,6">
+                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding VidPidText}" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="Consolas" FontSize="12" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding ConnectionMode}" Foreground="{StaticResource TextTertiaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                        Visibility="{Binding ShowBattery, Converter={StaticResource BoolToVis}}">
+                                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryIcon}"/>
+                                <TextBlock Text="{Binding BatteryText}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- ========== Coluna direita: abas ========== -->
+        <TabControl Grid.Column="1" Margin="8,12,16,12" Background="Transparent" BorderThickness="0">
+
+            <!-- ===== Aba 1: Mapeamento (perfis, turbo, editor visual) ===== -->
+            <TabItem Header="Mapeamento">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,12,8,8" DataContext="{Binding Profiles}">
+
+                        <!-- Perfil -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Perfil"/>
+                                <TextBlock Text="{Binding ActiveText}" Foreground="{StaticResource AccentBrush}" Margin="0,-4,0,12" TextWrapping="Wrap"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Text="Editando" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding Editing}"
+                                              DisplayMemberPath="Name" Margin="0,0,0,8"/>
+                                    <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,8">
+                                        <Button Content="Novo" Click="NewProfile_Click" Margin="0,0,6,0"
+                                                ToolTip="Cria um perfil para o último jogo que esteve em foco."/>
+                                        <Button Content="Duplicar" Click="DuplicateProfile_Click" Margin="0,0,6,0"/>
+                                        <Button Content="Apagar" Click="DeleteProfile_Click" IsEnabled="{Binding CanChangeExe}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="1" Text="Nome" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditingName, UpdateSourceTrigger=LostFocus}" Margin="0,0,0,8"
+                                             KeyDown="CommitOnEnter"/>
+
+                                    <TextBlock Grid.Row="2" Text="Jogo (.exe)" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Row="2" Grid.Column="1" IsEditable="True" ItemsSource="{Binding RecentExes}"
+                                              Text="{Binding EditingExe, UpdateSourceTrigger=LostFocus}" IsEnabled="{Binding CanChangeExe}"
+                                              DropDownOpened="RecentExes_DropDownOpened" KeyDown="CommitOnEnter"
+                                              ToolTip="O perfil é ativado sozinho quando este programa estiver em foco. A lista mostra os programas que estiveram em foco."/>
+                                </Grid>
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                           Visibility="{Binding IsEditingDefault, Converter={StaticResource BoolToVis}}"
+                                           Text="Perfil padrão: usado quando o jogo em foco não tem um perfil próprio. Não pode ser apagado nem associado a um jogo."/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Turbo -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Turbo"/>
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Width="150" Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <Run Text="{Binding TurboHz, Mode=OneWay}" FontSize="18" FontWeight="SemiBold"/>
+                                        <Run Text=" Hz"/>
+                                        <LineBreak/>
+                                        <Run Text="{Binding DataContext.MeasuredTurboText, Mode=OneWay, RelativeSource={RelativeSource AncestorType=Window}}"
+                                             Foreground="{StaticResource AccentBrush}" FontSize="12"/>
+                                    </TextBlock>
+                                    <Slider Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                                            Value="{Binding TurboHz}"/>
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                           Text="No controle: segure Home e aperte ↑/↓ (±1 Hz) ou →/← (±5 Hz). Home + outro botão liga/desliga o turbo daquele botão. Um aviso flutuante mostra o nível na hora."/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Editor visual -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Botões"/>
+                                <TextBlock Style="{StaticResource Caption}" Margin="0,-6,0,10" TextWrapping="Wrap"
+                                           Text="Clique em um botão do desenho para escolher o que ele faz. Contorno âmbar = alterado · rótulo âmbar = turbo · cinza tracejado = o controle não envia esse botão no modo atual."/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="280"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <views:ControllerDiagram x:Name="Diagram" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+
+                                    <!-- Editor do botão selecionado -->
+                                    <Border Grid.Column="1" Background="{StaticResource ChipBrush}" CornerRadius="8" Padding="14" Margin="12,0,0,0">
+                                        <Grid>
+                                            <TextBlock Text="Nenhum botão selecionado." Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"
+                                                       Visibility="{Binding HasNoEditor, Converter={StaticResource BoolToVis}}"/>
+                                            <StackPanel DataContext="{Binding Editor}"
+                                                        Visibility="{Binding DataContext.HasEditor, RelativeSource={RelativeSource AncestorType=Border}, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                                                <TextBlock TextWrapping="Wrap" Foreground="#FCE100" FontSize="12" Margin="0,0,0,10"
+                                                           Visibility="{Binding IsUnavailableNow, Converter={StaticResource BoolToVis}}"
+                                                           Text="O controle não envia este botão no modo de conexão atual. A configuração fica salva e passa a valer quando ele estiver disponível (ex.: Bluetooth)."/>
+
+                                                <TextBlock Text="Ação" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                                <ComboBox ItemsSource="{Binding KindOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                          SelectedValue="{Binding Kind}" Margin="0,0,0,10"/>
+
+                                                <StackPanel Visibility="{Binding IsXbox, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="Botão do Xbox" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                                    <ComboBox ItemsSource="{Binding XboxOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                              SelectedValue="{Binding Xbox1}" Margin="0,0,0,8"/>
+                                                    <TextBlock Text="Junto com (opcional)" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                                    <ComboBox ItemsSource="{Binding SecondXboxOptions}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                              SelectedValue="{Binding Xbox2}" Margin="0,0,0,10"/>
+                                                </StackPanel>
+
+                                                <StackPanel Visibility="{Binding IsKey, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="Tecla" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                                    <ComboBox ItemsSource="{Binding KeyOptions}" SelectedItem="{Binding Key}" Margin="0,0,0,6"/>
+                                                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,10"
+                                                               Text="Na tela de configuração de controles do jogo, aperte este botão: o jogo grava a tecla escolhida."/>
+                                                </StackPanel>
+
+                                                <CheckBox Content="Turbo" IsChecked="{Binding Turbo}"
+                                                          ToolTip="Enquanto segurado, o botão é apertado e solto repetidamente na frequência do turbo."/>
+                                                <TextBlock Style="{StaticResource Caption}" Margin="0,12,0,0" Text="Salvo automaticamente."/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ===== Aba 2: Controle (informações e diagnóstico do controle selecionado) ===== -->
+            <TabItem Header="Controle">
+                <Grid>
+                    <TextBlock Text="Selecione ou conecte um controle." HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Visibility="{Binding HasNoSelection, Converter={StaticResource BoolToVis}}"/>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Margin="0,12,8,8" DataContext="{Binding Selected}">
+
+                            <TextBlock Text="{Binding DisplayName}" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ModelText}" FontSize="14" Foreground="{StaticResource AccentBrush}" Margin="0,2,0,14"/>
+
+                            <!-- Aviso de modelo desconhecido + escolha manual -->
+                            <Border Background="{StaticResource WarnBgBrush}" BorderBrush="{StaticResource WarnBorderBrush}"
+                                    BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12"
+                                    Visibility="{Binding IsUnknown, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="⚠ Modelo não está no catálogo (models.json)."/>
+                                    <TextBlock TextWrapping="Wrap" Margin="0,4,0,10" Foreground="{StaticResource TextSecondaryBrush}"
+                                               Text="Escolha manualmente o que este controle possui. Para cadastrá-lo de vez, use o VID/PID abaixo."/>
+                                    <ComboBox ItemsSource="{Binding ManualChoices}" SelectedItem="{Binding ManualModel}"
+                                              DisplayMemberPath="Name" HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Observação do catálogo sobre este modelo/modo (ex.: botões extras indisponíveis) -->
+                            <Border Background="#1A3A52" BorderBrush="#2E6A94" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12"
+                                    Visibility="{Binding HasModelNote, Converter={StaticResource BoolToVis}}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Left" Text="ⓘ" FontSize="18" Foreground="{StaticResource AccentBrush}" Margin="0,-2,10,0"/>
+                                    <TextBlock Text="{Binding ModelNote}" TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Dispositivo -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="Dispositivo"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Style="{StaticResource InfoLabel}" Text="VID / PID"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding VidPidText}" FontFamily="Consolas"/>
+                                        <TextBlock Grid.Row="1" Style="{StaticResource InfoLabel}" Text="Conexão"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding ConnectionMode}"/>
+                                        <TextBlock Grid.Row="2" Style="{StaticResource InfoLabel}" Text="Windows vê"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding RawCountsText}"/>
+                                        <TextBlock Grid.Row="3" Style="{StaticResource InfoLabel}" Text="Modo SDL"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding GamepadSupportText}"/>
+                                        <TextBlock Grid.Row="4" Style="{StaticResource InfoLabel}" Text="Caminho"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding PathText}" FontFamily="Consolas" FontSize="12"/>
+                                        <TextBlock Grid.Row="5" Style="{StaticResource InfoLabel}" Text="Bateria"
+                                                   Visibility="{Binding ShowBattery, Converter={StaticResource BoolToVis}}"/>
+                                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6"
+                                                    Visibility="{Binding ShowBattery, Converter={StaticResource BoolToVis}}">
+                                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryIcon}"/>
+                                            <TextBlock Text="{Binding BatteryText}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Row="6" Style="{StaticResource InfoLabel}" Text="Detalhes"
+                                                   Visibility="{Binding HasDiagnostic, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource InfoValue}" Text="{Binding DiagnosticText}"
+                                                   FontFamily="Consolas" FontSize="12"
+                                                   Visibility="{Binding HasDiagnostic, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Botões crus -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="Botões que o Windows enxerga"/>
+                                    <ItemsControl ItemsSource="{Binding RawButtons}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource RawChip}">
+                                                    <TextBlock Text="{Binding Text}"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Margin="0,4,0,0">
+                                        <Run Text="Último botão pressionado: " Foreground="{StaticResource TextTertiaryBrush}"/>
+                                        <Run Text="{Binding LastRawPressed, Mode=OneWay}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Eixos -->
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CardTitle}" Text="Eixos (analógicos e gatilhos)"/>
+                                    <ItemsControl ItemsSource="{Binding Axes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="64"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Name}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    <ProgressBar Grid.Column="1" Minimum="0" Maximum="65535" Height="4" VerticalAlignment="Center"
+                                                                 Value="{Binding Progress, Mode=OneWay}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Value}" TextAlignment="Right" FontFamily="Consolas"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding HatsText}" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- ===== Aba 3: Dicas ===== -->
+            <TabItem Header="Dicas">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,12,8,8">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TipTitle}" Text="Modos de conexão do 8BitDo Ultimate 2"/>
+                                <TextBlock Style="{StaticResource TipText}">
+                                    • <Bold>Bluetooth</Bold>: todos os botões chegam ao PC, inclusive L4, R4, PL e PR. Bateria em % exata.<LineBreak/>
+                                    • <Bold>Dongle 2.4G</Bold>: menor atraso, mas o controle fala o protocolo do Xbox 360 e os botões extras não chegam ao PC.<LineBreak/>
+                                    • <Bold>Cabo USB</Bold>: igual ao dongle, e carrega a bateria.<LineBreak/>
+                                    Para usar os botões extras, conecte por Bluetooth. Para reconectar, aperte só o Home (segurar o botão de pareamento cria um pareamento novo).
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TipTitle}" Text="Dar uma função aos botões extras dentro do jogo"/>
+                                <TextBlock Style="{StaticResource TipText}">
+                                    1. Na aba Mapeamento, clique no botão extra (ex.: PL) e escolha "Tecla do teclado" (ex.: F13).<LineBreak/>
+                                    2. No jogo, abra a tela de configuração de controles/teclas e escolha a ação que você quer.<LineBreak/>
+                                    3. Aperte o PL no controle: o jogo grava a tecla, e a partir daí o PL faz aquela ação.<LineBreak/>
+                                    Se o jogo não aceitar a tecla F13–F24, escolha outra tecla que o jogo não use.
+                                    Também dá para fazer o PL apertar um botão do Xbox (ex.: A), ou dois juntos (ex.: LB + A).
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TipTitle}" Text="Turbo"/>
+                                <TextBlock Style="{StaticResource TipText}">
+                                    Com turbo, segurar o botão equivale a apertar e soltar várias vezes por segundo.<LineBreak/>
+                                    • Na interface: aba Mapeamento → clique no botão → marque "Turbo"; a frequência fica no cartão Turbo.<LineBreak/>
+                                    • No controle: segure <Bold>Home</Bold> e aperte o botão para ligar/desligar o turbo dele;
+                                    segure Home e use ↑/↓ (±1 Hz) ou →/← (±5 Hz) para mudar a frequência.<LineBreak/>
+                                    Um aviso flutuante mostra o nível na hora. Apertar Home sozinho continua funcionando como Home.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TipTitle}" Text="Perfis por jogo"/>
+                                <TextBlock Style="{StaticResource TipText}">
+                                    Abra o jogo, depois volte ao Virtual 8BitDo e clique em "Novo": o perfil já vem associado ao último jogo em foco.
+                                    A partir daí, sempre que o jogo estiver em foco, o perfil dele é usado; nos outros programas vale o perfil Padrão.
+                                    Os perfis ficam em %AppData%\Virtual8BitDo\profiles (um arquivo por perfil).
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource TipTitle}" Text="Se algo der errado"/>
+                                <TextBlock Style="{StaticResource TipText}">
+                                    • O jogo não reage ao controle: alguns jogos antigos só leem o "jogador 1"; com o dongle, o controle virtual pode ser o jogador 2.<LineBreak/>
+                                    • Botões duplicados em jogos da Steam: desative o Steam Input para aquele jogo.<LineBreak/>
+                                    • O controle sumiu dos jogos: clique em "Restaurar controle físico" (ou feche o app pelo menu da bandeja).
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

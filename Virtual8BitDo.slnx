@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Virtual8BitDo.App/Virtual8BitDo.App.csproj" />
+    <Project Path="src/Virtual8BitDo.Catalog/Virtual8BitDo.Catalog.csproj" />
+    <Project Path="src/Virtual8BitDo.Core/Virtual8BitDo.Core.csproj" />
+    <Project Path="src/Virtual8BitDo.Input/Virtual8BitDo.Input.csproj" />
+    <Project Path="src/Virtual8BitDo.Output/Virtual8BitDo.Output.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Virtual8BitDo.Tests/Virtual8BitDo.Tests.csproj" />
+  </Folder>
+</Solution>

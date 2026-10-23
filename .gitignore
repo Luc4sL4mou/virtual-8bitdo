@@ -1,0 +1,9 @@
+﻿# Saídas de compilação (são recriadas pelo dotnet build/publish)
+bin/
+obj/
+publish/
+
+# Arquivos do Visual Studio / VS Code por usuário
+.vs/
+*.user
+*.suo

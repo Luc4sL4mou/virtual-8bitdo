@@ -1,0 +1,70 @@
+{
+  "_comment": "Catálogo de modelos. 'models' é casado por VID/PID (hex em texto). 'genericProfiles' aparecem na escolha manual quando o modelo é desconhecido. Botões padrão (A B X Y LB RB LT RT Back Start Guide L3 R3 D-pad e analógicos) existem em todos, salvo se listados em 'missingButtons'. 'extraButtons' usa os slots P1..P4 (convenção SDL: P1 = direito superior, P2 = esquerdo superior, P3 = direito inferior, P4 = esquerdo inferior); 'label' é o nome no modelo; 'rawIndex' (opcional) é o índice do botão cru, para quando o SDL não o reconhece. 'extrasReadable': false = o controle tem os botões, mas neste modo de conexão eles não chegam ao PC. 'note' aparece como aviso na tela. 'connection' (Usb/Dongle24G/Bluetooth) é usado quando nada mais identifica a conexão. 'receiverPid' é o PID do dongle ocioso: quando cabo e dongle têm o mesmo PID, o número de série USB diz qual é qual.",
+
+  "genericProfiles": [
+    {
+      "id": "generic-xbox",
+      "name": "Genérico (padrão Xbox, sem botões extras)",
+      "extraButtons": []
+    },
+    {
+      "id": "generic-2-rear",
+      "name": "Genérico com 2 botões traseiros",
+      "extraButtons": [
+        { "id": "P1", "label": "R4" },
+        { "id": "P2", "label": "L4" }
+      ]
+    },
+    {
+      "id": "generic-4-rear",
+      "name": "Genérico com 4 botões extras",
+      "extraButtons": [
+        { "id": "P1", "label": "R4" },
+        { "id": "P2", "label": "L4" },
+        { "id": "P3", "label": "PR" },
+        { "id": "P4", "label": "PL" }
+      ]
+    }
+  ],
+
+  "models": [
+    {
+      "id": "xbox-360-virtual",
+      "vid": "0x045E",
+      "pid": "0x028E",
+      "name": "Xbox 360 (controle virtual do Virtual 8BitDo)",
+      "note": "Este é o controle que os jogos enxergam. Se for o controle virtual criado pelo app, ele espelha o seu 8BitDo: aperte os botões do 8BitDo e confira aqui o que o jogo recebe. (Um controle Xbox 360 real também aparece com este nome.)",
+      "extraButtons": []
+    },
+    {
+      "id": "8bitdo-ultimate-2-wireless-xinput",
+      "vid": "0x2DC8",
+      "pid": "0x310B",
+      "name": "8BitDo Ultimate 2 Wireless · modo Xbox (XInput)",
+      "connection": "Dongle24G",
+      "receiverPid": "0x6013",
+      "extrasReadable": false,
+      "note": "Seu controle possui 4 botões extras (L4, R4, PL e PR), mas neste modo eles ficam desativados: no dongle 2.4G e no cabo USB ele usa o protocolo do Xbox 360, que não os envia ao PC. Para ativar todos eles, é necessário emparelhá-lo por Bluetooth.",
+      "extraButtons": [
+        { "id": "P1", "label": "R4" },
+        { "id": "P2", "label": "L4" },
+        { "id": "P3", "label": "PR" },
+        { "id": "P4", "label": "PL" }
+      ]
+    },
+    {
+      "id": "8bitdo-ultimate-2-wireless-bt",
+      "vid": "0x2DC8",
+      "pid": "0x6012",
+      "name": "8BitDo Ultimate 2 Wireless · Bluetooth",
+      "connection": "Bluetooth",
+      "note": "Conectado por Bluetooth: todos os botões extras (L4, R4, PL e PR) estão ativos.",
+      "extraButtons": [
+        { "id": "P1", "label": "R4" },
+        { "id": "P2", "label": "L4" },
+        { "id": "P3", "label": "PR" },
+        { "id": "P4", "label": "PL" }
+      ]
+    }
+  ]
+}

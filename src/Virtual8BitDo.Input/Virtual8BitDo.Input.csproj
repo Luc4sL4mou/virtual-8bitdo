@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- O binding do SDL3 usa ponteiros nativos (SDL_Joystick*, SDL_Gamepad*). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SDL 3.5: tem o driver HIDAPI da 8BitDo, que lê L4/R4/PL/PR do Ultimate 2 via Bluetooth. -->
+    <PackageReference Include="HidSharp" Version="2.1.0" />
+    <PackageReference Include="ppy.SDL3-CS" Version="2026.1002.1" />
+  </ItemGroup>
+
+</Project>

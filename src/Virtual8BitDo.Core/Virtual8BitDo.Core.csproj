@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Virtual8BitDo.Input\Virtual8BitDo.Input.csproj" />
+    <ProjectReference Include="..\Virtual8BitDo.Output\Virtual8BitDo.Output.csproj" />
+  </ItemGroup>
+
+</Project>
