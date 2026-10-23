@@ -5,7 +5,7 @@
 **A central do seu controle 8BitDo no Windows.**
 Perfis automáticos por jogo, mapeamento de botões, turbo, bateria e um controle virtual Xbox 360 que funciona em qualquer jogo.
 
-![Detecção automática de jogo](docs/media/auto-detect.gif)
+![Visão geral do app: abas Mapeamento, Controle e Dicas, nos temas escuro e claro](docs/media/visao-geral.gif)
 
 </div>
 
@@ -24,26 +24,32 @@ Perfis automáticos por jogo, mapeamento de botões, turbo, bateria e um control
 
 ### Mapeamento e turbo
 
-![Editor de mapeamento](docs/media/mapping-editor.gif)
+![Aba Mapeamento](docs/media/mapeamento.png)
 
 Cada botão do desenho é clicável. Contorno âmbar = alterado, letra âmbar = turbo, tracejado = o controle não envia esse botão no modo de conexão atual. As mudanças são salvas sozinhas.
 
-### Tema escuro e claro
-
-![Troca de tema](docs/media/theme-toggle.gif)
-
-O escuro é o padrão. A escolha fica salva.
-
 ### Informações do controle
 
-![Aba Controle](docs/media/controller-info.png)
+![Aba Controle](docs/media/controle.png)
 
 Modelo reconhecido, modo de conexão (cabo, dongle 2.4G ou Bluetooth), bateria, e os botões e eixos que o Windows enxerga, ao vivo.
+
+### Dicas
+
+![Aba Dicas](docs/media/dicas.png)
+
+Guia rápido dentro do app: modos de conexão, como dar função aos botões extras, turbo e o que fazer se algo der errado.
+
+### Tema escuro e claro
+
+![Troca entre tema escuro e claro](docs/media/tema.gif)
+
+O escuro é o padrão. A troca é na hora, pelo botão lua/sol no canto da barra lateral, e a escolha fica salva.
 
 <details>
 <summary>Tema claro</summary>
 
-![Tema claro](docs/media/light-theme.png)
+![Tema claro](docs/media/tema-claro.png)
 
 </details>
 
