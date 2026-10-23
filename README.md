@@ -59,7 +59,26 @@ O escuro é o padrão. A troca é na hora, pelo botão lua/sol no canto da barra
 - **[ViGEmBus](https://github.com/nefarius/ViGEmBus)** — **obrigatório** para o controle virtual. Sem ele o app funciona só como visualizador e monitor de bateria.
 - **[HidHide](https://github.com/nefarius/HidHide)** — **recomendado**. Sem ele o jogo enxerga o controle físico e o virtual ao mesmo tempo, e os botões podem duplicar.
 
-Você não precisa baixar os drivers à mão: se algum faltar, o app mostra o botão **"Instalar ... (oficial)"**. Ele baixa o instalador do GitHub oficial do projeto, confere a assinatura digital (Nefarius Software Solutions e.U.) e só então abre. O Windows vai pedir a sua confirmação (UAC).
+### Instalando os drivers
+
+O ViGEmBus é o driver que cria o "controle Xbox 360" virtual que os jogos enxergam. O HidHide esconde o controle físico dos jogos. Os dois são projetos de terceiros (veja os [créditos](#créditos-e-licenças)) e **não vêm junto com este app**.
+
+**Pelo app (recomendado)**
+
+1. Abra o Virtual 8BitDo. Se um driver faltar, aparece na barra lateral o botão **"Instalar ViGEmBus (oficial)"** e/ou **"Instalar HidHide (oficial)"**.
+2. Clique no botão. O app baixa o instalador mais recente do GitHub oficial do projeto (`nefarius/ViGEmBus` ou `nefarius/HidHide`), confere se a assinatura digital é válida e da *Nefarius Software Solutions* e só então abre o instalador. Se a assinatura não bater, nada é executado.
+3. Aceite o pedido de permissão do Windows (UAC) e siga o instalador.
+4. **ViGEmBus:** depois de instalar, feche o app pelo menu do ícone da bandeja (**Sair**) e abra de novo para ativar o controle virtual. Se o instalador pedir para reiniciar o Windows, reinicie.
+5. **HidHide:** passa a ser usado assim que a instalação termina. Se o instalador pedir para reiniciar o Windows, reinicie.
+
+**Manualmente** (sem internet no app, ou se preferir conferir você mesmo)
+
+- ViGEmBus: baixe o instalador `.exe` em <https://github.com/nefarius/ViGEmBus/releases/latest>
+- HidHide: baixe o instalador `_x64.exe` em <https://github.com/nefarius/HidHide/releases/latest>
+
+Instale os dois e abra o Virtual 8BitDo. Ele detecta os drivers sozinho. Em "Controle virtual", na barra lateral, o app mostra se cada um está funcionando.
+
+> O ViGEmBus foi arquivado pelo autor em 2023 e não recebe mais atualizações, mas continua funcionando. Não há, hoje, um substituto equivalente.
 
 ## Controles testados
 
